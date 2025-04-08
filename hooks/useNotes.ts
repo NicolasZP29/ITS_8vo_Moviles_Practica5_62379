@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface Note {
   id: number;
@@ -17,6 +18,11 @@ export default function useNotes() {
     setIsLoading(true);
     setError(null);
     try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        setNotes([]);
+        return;
+      }
       const tareas = await api.getTareas();
       const adaptedNotes = tareas.map(tarea => ({
         ...tarea,

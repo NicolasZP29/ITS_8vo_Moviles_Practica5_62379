@@ -1,49 +1,61 @@
+// _layout.tsx
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
-import CreateNoteScreen from './create-note';
-import ListNotesScreen from '.';
-import { Stack } from 'expo-router';
+import { Slot, useRouter } from 'expo-router';
+import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const App = () => {
+export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const router = useRouter();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
+
+      AsyncStorage.getItem('token')
+        .then(token => {
+          setIsAuthenticated(!!token);
+        })
+        .catch(err => {
+          console.error('Error al recuperar token:', err);
+          setIsAuthenticated(false);
+        });
     }
   }, [loaded]);
 
-  if (!loaded) {
-    return null;
+  useEffect(() => {
+    if (loaded && isAuthenticated === false) {
+      requestAnimationFrame(() => {
+        router.replace("/login");
+      });
+    }
+  }, [loaded, isAuthenticated, router]);
+
+  if (!loaded || isAuthenticated === null) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
-  return (
-    <Stack>
-      <Stack.Screen
-        name="index"
-        options={
-          {
-            title: 'Mis Notas',
-          }
-        }
-      />
-      <Stack.Screen
-        name='create-note'
-        options={
-          {
-            title: 'Crear nueva nota'
-          }
-        }
-      />
-    </Stack>
-  );
-};
-export default App;
+  return <Slot />;
+}
+
+const styles = StyleSheet.create({
+  loadingContainer: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+});

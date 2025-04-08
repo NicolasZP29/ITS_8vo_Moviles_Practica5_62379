@@ -1,13 +1,24 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Card, IconButton, Text } from 'react-native-paper';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
+import { Card, IconButton } from 'react-native-paper';
 import useNotes from '../hooks/useNotes';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function NotesListScreen() {
   const router = useRouter();
   const { notes, isLoading, error, deleteNote, loadNotes } = useNotes();
+
+  // Función de logout: elimina el token y redirige a la pantalla de login.
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.removeItem('token');
+      router.replace('/login');
+    } catch (e) {
+      Alert.alert('Error', 'No se pudo cerrar sesión.');
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -58,6 +69,12 @@ export default function NotesListScreen() {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.title}>Mis Notas</Text>
+      
+      <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+        <MaterialIcons name="logout" size={20} color="#FFF" />
+      </TouchableOpacity>
+      
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {isLoading ? (
           <Text>Cargando notas...</Text>
@@ -98,7 +115,6 @@ export default function NotesListScreen() {
         )}
       </ScrollView>
       
-      {/* Floating Action Button */}
       <TouchableOpacity 
         style={styles.fab}
         onPress={() => router.push('/create-note')}
@@ -110,6 +126,23 @@ export default function NotesListScreen() {
 }
 
 const styles = StyleSheet.create({
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  logoutButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#6200ee',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -118,15 +151,6 @@ const styles = StyleSheet.create({
   errorText: {
     color: 'red',
     fontSize: 16,
-  },
-  statusContainer: {
-    marginRight: 16,
-  },
-  completedText: {
-    color: 'green',
-  },
-  pendingText: {
-    color: 'orange',
   },
   container: {
     flex: 1,
